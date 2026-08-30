@@ -77,7 +77,8 @@ export class LineWebhookHandler {
           return await DriveService.uploadFile(imageBuffer, filename, 'image/jpeg', timestamp);
         } catch (e) {
           console.warn('Drive upload warning:', e);
-          return { fileId: null, webViewLink: null };
+          const dataUrl = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+          return { fileId: null, webViewLink: dataUrl };
         }
       })(),
     ]);

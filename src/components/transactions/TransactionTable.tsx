@@ -319,10 +319,10 @@ export function TransactionTable({ initialTransactions, onRefresh }: Transaction
 
                       {/* Google Drive Status */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        {txn.driveFileId ? (
+                        {txn.driveFileId || txn.driveViewUrl ? (
                           <span
                             className="p-1 rounded-md bg-emerald-50 text-emerald-600 inline-block"
-                            title="มีไฟล์รูปภาพใน Google Drive"
+                            title="มีไฟล์รูปภาพแนบ"
                           >
                             <Paperclip className="w-3.5 h-3.5" />
                           </span>
