@@ -13,6 +13,7 @@ import {
   ExternalLink,
   MessageSquare,
   HardDrive,
+  LogOut,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -144,14 +145,32 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
           </div>
         </div>
 
-        {/* Footer info */}
-        <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-          <span>Paypers AI v1.0</span>
-          <span className="flex items-center gap-1">
-            <MessageSquare className="w-3.5 h-3.5 text-emerald-500" /> LINE OA Active
-          </span>
+        {/* Footer info & Logout */}
+        <div className="p-3.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-xs">
+              49
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold text-slate-800 leading-tight">Admin: 498558</div>
+              <div className="text-[10px] text-emerald-600 font-medium">เข้าสู่ระบบแล้ว</div>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/login';
+              }
+            }}
+            title="ออกจากระบบ"
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </aside>
     </>
   );
 }
+
