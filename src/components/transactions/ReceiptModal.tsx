@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   X,
   ExternalLink,
@@ -18,6 +18,11 @@ import {
   CreditCard,
   Plus,
   Trash,
+  Upload,
+  Camera,
+  Image as ImageIcon,
+  Maximize2,
+  Eye,
 } from 'lucide-react';
 import { Transaction, TransactionItem } from '@/types/transaction';
 import { formatCurrency, formatThaiDate } from '@/lib/utils';
@@ -43,6 +48,8 @@ export function ReceiptModal({
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isFullscreenImage, setIsFullscreenImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (field: keyof Transaction, value: any) => {
     setFormData((prev) => {
@@ -56,6 +63,21 @@ export function ReceiptModal({
       }
       return next;
     });
+  };
+
+  const handleAttachImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setFormData((prev) => ({
+        ...prev,
+        driveViewUrl: dataUrl,
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleItemChange = (index: number, field: keyof TransactionItem, value: any) => {
@@ -121,10 +143,32 @@ export function ReceiptModal({
 
   const imageSrc = formData.driveFileId
     ? `/api/drive/view/${formData.driveFileId}`
-    : null;
+    : (formData.driveViewUrl || null);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+      {/* Fullscreen Image Modal Overlay */}
+      {isFullscreenImage && imageSrc && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4"
+          onClick={() => setIsFullscreenImage(false)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+            <button
+              onClick={() => setIsFullscreenImage(false)}
+              className="absolute -top-12 right-0 p-2 text-white/80 hover:text-white bg-white/10 rounded-full transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={imageSrc}
+              alt={formData.merchant}
+              className="max-h-[85vh] max-w-full object-contain rounded-2xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
@@ -170,33 +214,81 @@ export function ReceiptModal({
           {/* Left Column: Image Preview (5 cols) */}
           <div className="lg:col-span-5 p-6 bg-slate-900 flex flex-col justify-between items-center text-white min-h-[350px]">
             <div className="w-full flex items-center justify-between text-xs text-slate-400 mb-3">
-              <span>ภาพเอกสารจาก Google Drive</span>
-              {formData.driveViewUrl && (
+              <span className="flex items-center gap-1.5 font-medium text-slate-300">
+                <ImageIcon className="w-4 h-4 text-brand-400" />
+                ภาพเอกสาร / สลิปโอนเงิน
+              </span>
+              {formData.driveViewUrl && formData.driveViewUrl.startsWith('http') && (
                 <a
                   href={formData.driveViewUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-brand-400 hover:text-brand-300 inline-flex items-center gap-1"
+                  className="text-brand-400 hover:text-brand-300 inline-flex items-center gap-1 font-medium"
                 >
                   เปิดใน Drive <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               )}
             </div>
 
-            <div className="flex-1 w-full flex items-center justify-center bg-slate-950/60 rounded-2xl overflow-hidden border border-slate-800 p-2 relative group">
+            {/* Image Preview Box */}
+            <div className="flex-1 w-full flex flex-col items-center justify-center bg-slate-950/70 rounded-2xl overflow-hidden border border-slate-800 p-2 relative group min-h-[280px]">
               {imageSrc ? (
-                <img
-                  src={imageSrc}
-                  alt={formData.merchant}
-                  className="max-h-[420px] w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-200"
-                />
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <img
+                    src={imageSrc}
+                    alt={formData.merchant}
+                    className="max-h-[380px] w-auto object-contain rounded-xl transition-transform duration-200 cursor-pointer"
+                    onClick={() => setIsFullscreenImage(true)}
+                  />
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/80 backdrop-blur-md p-1.5 rounded-xl border border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setIsFullscreenImage(true)}
+                      className="p-1.5 hover:bg-white/20 rounded-lg text-white text-xs flex items-center gap-1"
+                      title="ดูภาพขนาดเต็ม"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-1.5 hover:bg-white/20 rounded-lg text-white text-xs flex items-center gap-1"
+                      title="เปลี่ยนรูปภาพ"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <div className="text-center p-8 text-slate-500">
-                  <FileText className="w-12 h-12 mx-auto mb-2 opacity-40" />
-                  <p className="text-sm">ไม่มีรูปภาพแนบในรายการนี้</p>
-                  <p className="text-xs text-slate-600 mt-1">(สร้างจากข้อความหรือบันทึกด้วยมือ)</p>
+                <div className="text-center p-6 text-slate-400 flex flex-col items-center justify-center space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-800/80 flex items-center justify-center text-slate-500 border border-slate-700/50">
+                    <FileText className="w-7 h-7 opacity-60" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-300">ไม่มีรูปภาพแนบในรายการนี้</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      (สร้างจากข้อความหรือบันทึกด้วยมือ)
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-brand-600/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>แนบรูปภาพสลิป/ใบเสร็จ</span>
+                  </button>
                 </div>
               )}
+
+              {/* Hidden file input for attaching photo */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={handleAttachImage}
+              />
             </div>
 
             {formData.notes && (

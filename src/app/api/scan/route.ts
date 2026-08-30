@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
       driveViewUrl = uploadRes.webViewLink || `/api/drive/view/${uploadRes.fileId}`;
     } catch (driveErr) {
       console.warn('Drive upload warning:', driveErr);
+      // Fallback: store Base64 data URL so the receipt photo is always visible
+      driveViewUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
     }
 
     // 3. Save to Google Sheets
